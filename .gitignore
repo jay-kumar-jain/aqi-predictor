@@ -3,10 +3,6 @@ __pycache__/
 *.pyc
 .venv/
 
-# Data
-data/raw/
-data/processed/
-
 # Trained models
 models/
 
