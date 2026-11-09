@@ -1,69 +1,51 @@
+"""Lightweight, split-safe dataset cleanup for AQI modeling."""
+from pathlib import Path
+
 import pandas as pd
 
 
-INPUT_PATH = "aqi-predictor/data/raw/aqi.csv"
-OUTPUT_PATH = "aqi-predictor/data/processed/aqi_cleaned.csv"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+INPUT_PATH = PROJECT_ROOT / "data" / "raw" / "aqi.csv"
+OUTPUT_PATH = PROJECT_ROOT / "data" / "processed" / "aqi_cleaned.csv"
+
+FEATURE_COLUMNS = [
+    "location", "temp_c", "humidity", "pressure_mb", "windspeed_kph",
+    "pm2_5", "pm10", "co", "no2", "hour", "day", "month", "day_of_week",
+]
+TARGET_COLUMN = "aqi_index"
 
 
 def preprocess_data(input_path=INPUT_PATH, output_path=OUTPUT_PATH):
-    # Load data
+    """Remove duplicates/invalid targets and derive time features.
+
+    Missing feature values intentionally remain missing: imputers are fitted only
+    on each training fold in the modeling pipeline.
+    """
+    input_path, output_path = Path(input_path), Path(output_path)
     df = pd.read_csv(input_path)
+    original_rows = len(df)
+    df = df.drop_duplicates().copy()
 
-    print("Original shape:", df.shape)
-
-    # Remove duplicate rows
-    df = df.drop_duplicates()
-
-    # Convert date and time
-    df["datetime"] = pd.to_datetime(
-        df["date_ist"] + " " + df["time_ist"],
-        errors="coerce"
+    datetime = pd.to_datetime(
+        df["date_ist"].astype("string") + " " + df["time_ist"].astype("string"),
+        errors="coerce", dayfirst=True,
     )
+    df["hour"] = datetime.dt.hour
+    df["day"] = datetime.dt.day
+    df["month"] = datetime.dt.month
+    df["day_of_week"] = datetime.dt.dayofweek
 
-    # Remove rows where datetime could not be converted
-    df = df.dropna(subset=["datetime"])
-
-    # Create time-based features
-    df["hour"] = df["datetime"].dt.hour
-    df["day"] = df["datetime"].dt.day
-    df["month"] = df["datetime"].dt.month
-    df["day_of_week"] = df["datetime"].dt.dayofweek
-
-    # Columns we want for ML
-    feature_columns = [
-        "location",
-        "temp_c",
-        "humidity",
-        "pressure_mb",
-        "windspeed_kph",
-        "pm2_5",
-        "pm10",
-        "co",
-        "no2",
-        "hour",
-        "day",
-        "month",
-        "day_of_week",
-        "aqi_index"
-    ]
-
-    df = df[feature_columns]
-
-    # Handle missing values
-    numeric_columns = df.select_dtypes(include=["number"]).columns
-
-    for column in numeric_columns:
-        df[column] = df[column].fillna(df[column].median())
-
-    # Remove rows where target is missing
-    df = df.dropna(subset=["aqi_index"])
-
-    # Save processed dataset
-    df.to_csv(output_path, index=False)
-
-    print("Processed shape:", df.shape)
-    print("Saved to:", output_path)
-
+    df[TARGET_COLUMN] = pd.to_numeric(df[TARGET_COLUMN], errors="coerce")
+    df = df.dropna(subset=[TARGET_COLUMN, "hour", "day", "month", "day_of_week"])
+    for col in FEATURE_COLUMNS:
+        if col != "location":
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    df["location"] = df["location"].astype("string").str.strip().replace("", pd.NA)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    df[FEATURE_COLUMNS + [TARGET_COLUMN]].to_csv(output_path, index=False)
+    print(f"Rows: {original_rows:,} -> {len(df):,} (duplicates/invalid target or time removed)")
+    print(f"Feature missing values retained for fold-local imputation: {int(df[FEATURE_COLUMNS].isna().sum().sum()):,}")
+    print(f"Saved: {output_path}")
     return df
 
 

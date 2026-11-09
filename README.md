@@ -54,7 +54,7 @@ aqi-predictor/
 
 ## Dataset
 
-The project uses historical air-quality and weather data containing variables such as:
+The included `data/raw/aqi.csv` contains 52,560 hourly records with air-quality and weather fields such as:
 
 - PM2.5
 - PM10
@@ -68,11 +68,7 @@ The project uses historical air-quality and weather data containing variables su
 - Date and time
 - AQI
 
-The raw dataset is not included in the repository. It should be placed inside:
-
-```text
-data/raw/
-```
+The target is `aqi_index`. The preprocessing step removes duplicate rows and rows without a usable target/time, derives hour/day/month/weekday, and keeps feature missingness for fold-local imputation.
 
 ## Machine Learning Pipeline
 
@@ -81,9 +77,7 @@ Raw Data
    ↓
 Data Loading
    ↓
-Data Preprocessing
-   ↓
-Exploratory Data Analysis
+Data Preprocessing and Exploratory Data Analysis
    ↓
 Feature Engineering
    ↓
@@ -156,11 +150,23 @@ pip install -r requirements.txt
 python src/preprocess.py
 ```
 
+### Explore the data
+
+```bash
+python src/analyze.py
+```
+
+This writes `results/eda_report.md`, numeric and location summaries, missingness and correlation tables, plus `results/figures/eda_overview.png`.
+
+The complete interactive analysis is in `notebooks/analysis.ipynb` and includes the exploration, split-safe preprocessing, regression diagnostics, cross-validation, and sample predictions.
+
 ### Train the model
 
 ```bash
 python src/train.py
 ```
+
+This compares Linear Regression, Random Forest, and XGBoost using the same five-fold split and preprocessing. Selection uses mean CV MAE; the untouched test split is reported for the comparison. The winner is refit on all rows and saved to `models/best_model.joblib`. Per-model results are saved to `results/model_comparison.csv` and `results/model_metrics.json`. If XGBoost is unavailable, that candidate is skipped with a note.
 
 ### Make a prediction
 
@@ -182,30 +188,39 @@ The trained model will be evaluated using regression metrics such as:
 - RMSE (Root Mean Squared Error)
 - R² Score
 
-Model performance and visualizations will be stored in:
+Model metrics, validation plots, and EDA outputs are stored in:
 
 ```text
 results/
 ```
 
+The application takes AQI-related pollutant and weather measurements as inputs. It estimates AQI for those measurements; it does not forecast future AQI.
+
 ## Current Status
+
+## Analysis and validation notes
+
+- Numeric feature missing values are median-imputed, with missingness indicators; `location` is mode-imputed and one-hot encoded. Imputers, encoder, and standard scaler are part of the estimator pipeline, so they are fitted on training data only and refitted within each cross-validation fold.
+- Candidate estimators are multiple linear regression, random forest, and XGBoost. Each uses the same fold-local imputation, categorical encoding, and scaling pipeline. The selected model is the lowest mean CV MAE on the training partition; the test partition is reserved for final comparison. Predictions are floored at zero because AQI cannot be negative.
+- The web app reads `models/best_model.joblib`; run model training before launching the app. Training also saves the Linear Regression baseline separately for comparison.
+- The dataset is hourly. Random splits can put nearby observations in both train and test, so reported metrics measure interpolation/generalization across sampled records. For forecasting future dates, use a chronological holdout and time-series cross-validation.
+- Pollutant concentrations are also inputs to the target AQI. If the intended product must predict AQI before pollutant measurements are available, remove those fields and retrain; current scores do not establish that use case.
 
 🚧 **Project in development**
 
 - [x] Project structure
 - [x] Dataset collection
 - [x] Initial preprocessing
-- [ ] Exploratory data analysis
-- [ ] Feature engineering
-- [ ] Model training
-- [ ] Model evaluation
-- [ ] Prediction pipeline
-- [ ] Streamlit application
-- [ ] Final documentation
+- [x] Exploratory data analysis
+- [x] Feature engineering
+- [x] Model training
+- [x] Model evaluation
+- [x] Prediction pipeline
+- [x] Streamlit application
+- [x] Model comparison and documentation
 
 ## Future Improvements
 
-- Compare multiple machine learning models
 - Improve feature engineering
 - Perform hyperparameter tuning
 - Add time-series forecasting
