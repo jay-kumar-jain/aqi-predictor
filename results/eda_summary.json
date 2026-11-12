@@ -1,30 +1,7 @@
 {
-  "rows": 52560,
-  "columns": [
-    "date_ist",
-    "time_ist",
-    "location",
-    "lat",
-    "lon",
-    "temp_c",
-    "humidity",
-    "pressure_mb",
-    "windspeed_kph",
-    "condition_text",
-    "description",
-    "aqi_index",
-    "pm2_5",
-    "pm10",
-    "co",
-    "no2",
-    "hour",
-    "day",
-    "month",
-    "day_of_week"
-  ],
-  "duplicate_rows": 0,
-  "locations": 6,
-  "location_rows": {
+  "dataset_rows": 52560,
+  "stations": 6,
+  "station_distribution": {
     "Anand Vihar": 8760,
     "Connaught Place": 8760,
     "Dwarka": 8760,
@@ -32,7 +9,7 @@
     "Rohini": 8760,
     "IGI Airport": 8760
   },
-  "target": {
+  "target_metrics": {
     "count": 52560,
     "mean": 287.3642123287671,
     "median": 170.0,
@@ -44,66 +21,66 @@
     "skewness": 3.528728089061415,
     "iqr_outlier_count": 8586
   },
-  "target_spearman_associations": {
+  "spearman_correlations": {
     "temp_c": {
       "spearman_rho": 0.04300840331986027,
       "p_value": 5.937525622303545e-23,
-      "n": 52560
+      "sample_size": 52560
     },
     "humidity": {
       "spearman_rho": -0.3582655800189455,
       "p_value": 0.0,
-      "n": 52560
+      "sample_size": 52560
     },
     "pressure_mb": {
       "spearman_rho": 0.08536284960854247,
       "p_value": 1.3854767941908795e-85,
-      "n": 52560
+      "sample_size": 52560
     },
     "windspeed_kph": {
       "spearman_rho": -0.004485607006175577,
       "p_value": 0.3037854384092949,
-      "n": 52560
+      "sample_size": 52560
     },
     "pm2_5": {
       "spearman_rho": 0.6977133110356974,
       "p_value": 0.0,
-      "n": 52560
+      "sample_size": 52560
     },
     "pm10": {
       "spearman_rho": 0.7246536426271633,
       "p_value": 0.0,
-      "n": 52560
+      "sample_size": 52560
     },
     "co": {
       "spearman_rho": 0.0684835845350722,
       "p_value": 1.127768542718805e-55,
-      "n": 52560
+      "sample_size": 52560
     },
     "no2": {
       "spearman_rho": -0.014629934574465014,
       "p_value": 0.0007960809810154438,
-      "n": 52560
+      "sample_size": 52560
     },
     "hour": {
       "spearman_rho": 0.03324668400370805,
       "p_value": 2.4583754539787437e-14,
-      "n": 52560
+      "sample_size": 52560
     },
     "day": {
       "spearman_rho": -0.013608078836370052,
       "p_value": 0.0018094068759745047,
-      "n": 52560
+      "sample_size": 52560
     },
     "month": {
       "spearman_rho": -0.23298578213160717,
       "p_value": 0.0,
-      "n": 52560
+      "sample_size": 52560
     },
     "day_of_week": {
       "spearman_rho": -0.009171302502205561,
       "p_value": 0.03550039395677862,
-      "n": 52560
+      "sample_size": 52560
     }
   }
 }

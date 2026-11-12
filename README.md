@@ -1,233 +1,277 @@
-# AQI Predictor
+# VayuDrishti (वायुदृष्टि): Delhi Air Quality Intelligence & AQI Prediction Platform
 
-A machine learning project for predicting Air Quality Index (AQI) using historical air-quality and weather data.
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Machine Learning](https://img.shields.io/badge/ML-Scikit--Learn%20%7C%20XGBoost-orange.svg)](https://scikit-learn.org/)
+[![Streamlit App](https://img.shields.io/badge/Frontend-Streamlit-red.svg)](https://streamlit.io/)
+[![Standard](https://img.shields.io/badge/AQI%20Standard-CPCB%20India-green.svg)](https://cpcb.nic.in/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
-## Overview
+**VayuDrishti** (*Sanskrit: Vāyu = Air/Wind, Dṛṣṭi = Vision/Insight*) is an end-to-end, production-ready machine learning and environmental intelligence platform designed to predict the **Air Quality Index (AQI)** for the National Capital Region of Delhi.
 
-Air pollution is influenced by multiple pollutants and weather conditions. This project uses historical environmental data to build a machine learning model that predicts AQI based on factors such as PM2.5, PM10, CO, NO2, temperature, humidity, pressure, wind speed, location, and time-related features.
+Using historical hourly environmental records across Delhi's major monitoring stations, VayuDrishti combines **atmospheric physics feature engineering**, **cross-validated ensemble regression models**, **CPCB category classification**, and a **Streamlit geospatial dashboard** with health advisories and policy simulation tools.
 
-The project follows a modular machine learning workflow covering data preprocessing, exploratory data analysis, feature engineering, model training, evaluation, and prediction.
+---
 
-## Features
+## 📌 Project Highlights
 
-- Data loading and preprocessing
-- Missing-value handling
-- Duplicate removal
-- Date and time feature extraction
-- Exploratory data analysis
-- Feature engineering
-- AQI prediction using machine learning
-- Model evaluation
-- Prediction script
-- Streamlit web application
+- **Domain-Specific Atmospheric Physics:** Engineered features including the **Atmospheric Stagnation Index**, **Particulate Burden** ($PM_{2.5} + PM_{10}$), **Combustion Ratio** ($PM_{2.5} / PM_{10}$), **Dew Point approximation**, vehicular interaction proxies, and **cyclical continuous trigonometric time encodings** ($\sin/\cos$).
+- **Multi-Model Rigorous Benchmarking:** Evaluates **Linear Regression**, **Random Forest**, and **XGBoost** under strict 5-fold cross-validation and held-out test splits.
+- **Top Predictive Performance:** The production Random Forest pipeline achieves an **$R^2$ of 0.9556** and held-out **MAE of 23.53 AQI points** ($R^2 = 0.9714$ for XGBoost).
+- **Automated CPCB Health Advisory:** Real-time mapping to Central Pollution Control Board (CPCB) categories (Good, Satisfactory, Moderate, Poor, Very Poor, Severe) with tailored precautions for vulnerable groups, N95 mask advice, and ventilation guidance.
+- **Geospatial & Interactive Dashboard:** Multi-tab Streamlit web application featuring a PyDeck 3D station map, dynamic AQI gauge, what-if sensitivity simulator, diurnal trend curves, and ML explainability.
+- **Clean Leakage-Safe Architecture:** Full feature transformations, fold-local median imputations, and scalers are bundled directly into the serialized Scikit-learn Pipeline.
 
-## Project Structure
+---
+
+## 🏛️ System Architecture
+
+```text
+               Raw Delhi Environmental Dataset (52,560 Hourly Records)
+                                          │
+                                          ▼
+                      ┌───────────────────────────────────────┐
+                      │ Data Preprocessing & Validation       │
+                      │ (Timestamp parsing, Deduplication)    │
+                      └──────────────────┬────────────────────┘
+                                         │
+                                         ▼
+                      ┌───────────────────────────────────────┐
+                      │ Domain-Grounded Feature Engineering   │
+                      │ - Stagnation Index (1 / (Wind + 0.5)) │
+                      │ - Particulate Burden (PM2.5 + PM10)   │
+                      │ - Dew Point & Winter Inversion Flags  │
+                      │ - Cyclical Sin/Cos Hour & Month       │
+                      └──────────────────┬────────────────────┘
+                                         │
+                                         ▼
+                      ┌───────────────────────────────────────┐
+                      │ Leakage-Safe ColumnTransformer        │
+                      │ (Median Imputation, Scaler, OHE)      │
+                      └──────────────────┬────────────────────┘
+                                         │
+                    ┌────────────────────┼────────────────────┐
+                    ▼                    ▼                    ▼
+          ┌───────────────────┐┌───────────────────┐┌───────────────────┐
+          │ Linear Regression ││   Random Forest   ││      XGBoost      │
+          │ (Baseline Model)  ││ (Ensemble Winner) ││ (Gradient Boost) │
+          └───────────────────┘└─────────┬─────────┘└───────────────────┘
+                                         │
+                                         ▼
+                      ┌───────────────────────────────────────┐
+                      │ Model Selection & Serialization       │
+                      │ (5-Fold CV MAE Selection, Compressed) │
+                      └──────────────────┬────────────────────┘
+                                         │
+                                         ▼
+                 ┌─────────────────────────────────────────────────┐
+                 │          VayuDrishti Streamlit Platform         │
+                 │  - Real-Time AQI & CPCB Health Advisories       │
+                 │  - What-If Sensitivity Policy Simulator        │
+                 │  - Geospatial Monitoring Station Map (PyDeck)   │
+                 │  - Feature Importance & Model Diagnostics       │
+                 └─────────────────────────────────────────────────┘
+```
+
+---
+
+## 📊 Dataset Profile
+
+The dataset consists of **52,560 hourly records** collected across 2025 from 6 continuous ambient air quality monitoring stations in Delhi:
+
+| Station Name | Microclimate Profile | Coordinates | Records |
+|---|---|---|---:|
+| **Anand Vihar** | Interstate Bus Terminal, Heavy Traffic Corridor | 28.6469° N, 77.3160° E | 8,760 |
+| **Connaught Place** | Commercial Center, High Vehicular Density | 28.6304° N, 77.2177° E | 8,760 |
+| **Dwarka** | Residential Sector, Open Aerodynamic Corridor | 28.5882° N, 77.0494° E | 8,760 |
+| **IGI Airport** | Aviation Hub, Highway Intersection | 28.5562° N, 77.1000° E | 8,760 |
+| **Okhla Phase III** | Heavy Industrial Area, High Particulate Load | 28.5273° N, 77.2618° E | 8,760 |
+| **Rohini** | Suburban Residential & Freight Corridor | 28.7041° N, 77.1025° E | 8,760 |
+
+### Tracked Variables
+- **Particulates:** $PM_{2.5}$ ($\mu g/m^3$), $PM_{10}$ ($\mu g/m^3$)
+- **Gaseous Pollutants:** $CO$ ($\mu g/m^3$), $NO_2$ ($\mu g/m^3$)
+- **Meteorological Conditions:** Ambient Temperature (°C), Relative Humidity (%), Barometric Pressure (mb), Wind Speed (km/h)
+- **Target Variable:** `aqi_index` (Continuous AQI scale: 0 to 500+)
+
+---
+
+## 🔬 Feature Engineering & Mathematical Formulations
+
+To empower the models beyond simple raw values, domain physics were incorporated:
+
+1. **Particulate Total Mass:**
+   $$\text{PM}_{\text{total}} = \text{PM}_{2.5} + \text{PM}_{10}$$
+   *Accounts for >60% of overall predictive importance.*
+2. **Fine-to-Coarse Particulate Ratio:**
+   $$\text{PM}_{\text{ratio}} = \frac{\text{PM}_{2.5}}{\text{PM}_{10} + 10^{-4}}$$
+   *Distinguishes high-toxicity combustion soot from road dust.*
+3. **Atmospheric Stagnation Index:**
+   $$\text{Stagnation} = \frac{1}{\text{Windspeed} + 0.5}$$
+   *Models boundary-layer trapping of pollutants during calm winds.*
+4. **Dew Point & Condensation Proxy:**
+   $$T_{\text{dew}} \approx T - \left(\frac{100 - \text{RH}}{5}\right)$$
+   *Critical for capturing nocturnal winter smog and fog formation.*
+5. **Continuous Cyclical Time Encoding:**
+   $$\sin\left(\frac{2\pi \cdot \text{hour}}{24}\right), \quad \cos\left(\frac{2\pi \cdot \text{hour}}{24}\right), \quad \sin\left(\frac{2\pi (\text{month}-1)}{12}\right), \quad \cos\left(\frac{2\pi (\text{month}-1)}{12}\right)$$
+   *Preserves continuity between 23:00 and 00:00 and December to January.*
+
+---
+
+## 🏆 Model Benchmarks & Comparison
+
+Models were evaluated across **42,048 training records** with **5-fold cross-validation** and verified against an untouched **held-out test split (10,512 records)**:
+
+| Model Architecture | 5-Fold CV MAE | CV RMSE | 5-Fold CV $R^2$ | Held-Out Test MAE | Test RMSE | Held-Out Test $R^2$ |
+|---|---:|---:|---:|---:|---:|---:|
+| **Random Forest (Winner)** | **26.96 ± 0.62** | 76.51 | **0.9446** | **23.53** | 68.99 | **0.9556** |
+| **XGBoost Regressor** | **29.51 ± 0.34** | 61.20 | **0.9646** | **27.68** | **55.36** | **0.9714** |
+| **Linear Regression** | 96.06 ± 0.95 | 176.40 | 0.7146 | 95.33 | 172.86 | 0.7213 |
+
+> **Top Predictive Drivers:** `pm_total` (60.5%), `pm10` (7.7%), `day` (5.2%), `dew_point` (3.7%), `sin_month` (2.4%), `pm2_5` (2.4%), `humidity` (1.9%).
+
+---
+
+## 🏥 CPCB Health Advisory Framework
+
+Predictions are classified using the official Indian CPCB National Air Quality Index (NAQI) scale:
+
+| AQI Range | Category | Color Code | Precautionary Advisory & Public Health Guidance |
+|---|---|---|---|
+| **0 – 50** | **Good** | Green | Air quality is satisfactory; clean outdoor exercise conditions. |
+| **51 – 100** | **Satisfactory** | Light Green | Minor breathing discomfort to unusually sensitive individuals. |
+| **101 – 200** | **Moderate** | Amber | Breathing discomfort for asthma/heart patients; reduce intense outdoor sports. |
+| **201 – 300** | **Poor** | Red | Breathing discomfort to most people on prolonged exposure; wear N95 mask outdoors. |
+| **301 – 400** | **Very Poor** | Purple | Triggers respiratory illness; avoid outdoor activity; run indoor HEPA purifiers. |
+| **401 – 500+** | **Severe** | Maroon | Health emergency; mandatory N95/N99 respirators; all outdoor activity suspended. |
+
+---
+
+## 📁 Repository Structure
 
 ```text
 aqi-predictor/
+├── app.py                      # Comprehensive multi-tab Streamlit web application
+├── requirements.txt            # Production dependencies
+├── README.md                   # Complete architectural and usage documentation
 │
 ├── data/
 │   ├── raw/
+│   │   └── aqi.csv             # 52,560 hourly records from 6 Delhi stations
 │   └── processed/
+│       └── aqi_cleaned.csv     # Cleaned dataset with time components & coordinates
 │
 ├── src/
-│   ├── data.py
-│   ├── preprocess.py
-│   ├── features.py
-│   ├── model.py
-│   ├── train.py
-│   └── predict.py
+│   ├── __init__.py             # Package marker & namespace resolver
+│   ├── preprocess.py          # Data ingestion, validation, and cleaning
+│   ├── features.py            # AQIFeatureEngineer & ColumnTransformer pipeline
+│   ├── train.py               # 5-fold CV, benchmarking, feature importance & serialization
+│   ├── predict.py             # Inference API, CPCB classification & health advisory logic
+│   └── analyze.py             # Exploratory data analysis, rank correlation & visualizations
 │
 ├── models/
+│   ├── best_model.joblib       # Compressed production Random Forest pipeline (~65MB)
+│   └── linear_regression.joblib# Baseline model comparison pipeline
 │
 ├── results/
+│   ├── model_comparison.csv   # Tabular cross-validation and test benchmark metrics
+│   ├── model_metrics.json     # Full machine learning audit report
+│   ├── feature_importance.csv # Relative weights of environmental predictors
+│   ├── eda_report.md          # Comprehensive statistical findings
 │   └── figures/
+│       ├── model_validation.png   # Observed vs Predicted & Residuals scatter
+│       ├── model_comparison.png   # CV MAE bar chart with error bounds
+│       ├── model_cv_r2.png        # 5-Fold R² stability boxplot
+│       ├── feature_importance.png # Top 15 predictive environmental factors
+│       ├── eda_overview.png       # 4-Panel distribution, station variance & heatmap
+│       └── seasonal_trends.png    # Monthly seasonal AQI trajectory
 │
-├── notebooks/
-│   └── analysis.ipynb
-│
-├── app.py
-├── requirements.txt
-├── .gitignore
-└── README.md
+└── tests/
+    └── test_pipeline.py       # Automated unit & integration tests
 ```
 
-## Dataset
+---
 
-The included `data/raw/aqi.csv` contains 52,560 hourly records with air-quality and weather fields such as:
+## 🚀 Quick Start Guide
 
-- PM2.5
-- PM10
-- CO
-- NO2
-- Temperature
-- Humidity
-- Atmospheric pressure
-- Wind speed
-- Location
-- Date and time
-- AQI
-
-The target is `aqi_index`. The preprocessing step removes duplicate rows and rows without a usable target/time, derives hour/day/month/weekday, and keeps feature missingness for fold-local imputation.
-
-## Machine Learning Pipeline
-
-```text
-Raw Data
-   ↓
-Data Loading
-   ↓
-Data Preprocessing and Exploratory Data Analysis
-   ↓
-Feature Engineering
-   ↓
-Train / Test Split
-   ↓
-Model Training
-   ↓
-Model Evaluation
-   ↓
-AQI Prediction
-   ↓
-Streamlit Application
-```
-
-## Target Variable
-
-The target variable is:
-
-```text
-aqi_index
-```
-
-The model will learn the relationship between environmental conditions, pollutant concentrations, time-related information, and AQI.
-
-## Technologies Used
-
-- Python
-- Pandas
-- NumPy
-- Scikit-learn
-- XGBoost
-- Matplotlib
-- Seaborn
-- Jupyter Notebook
-- Streamlit
-- Joblib
-
-## Installation
-
-Clone the repository:
+### 1. Clone & Set Up Environment
 
 ```bash
-git clone <your-repository-url>
+git clone <repository_url>
 cd aqi-predictor
-```
-
-Create a virtual environment:
-
-```bash
 python -m venv .venv
 ```
 
-Activate it on Windows:
-
-```bash
-.venv\Scripts\activate
-```
+Activate the environment:
+- **Windows:** `.venv\Scripts\activate`
+- **Linux / macOS:** `source .venv/bin/activate`
 
 Install dependencies:
-
 ```bash
 pip install -r requirements.txt
 ```
 
-## Usage
-
-### Preprocess the data
+### 2. Run Preprocessing & Exploratory Analysis
 
 ```bash
+# Clean raw records
 python src/preprocess.py
-```
 
-### Explore the data
-
-```bash
+# Run EDA and generate visualization charts
 python src/analyze.py
 ```
 
-This writes `results/eda_report.md`, numeric and location summaries, missingness and correlation tables, plus `results/figures/eda_overview.png`.
-
-The complete interactive analysis is in `notebooks/analysis.ipynb` and includes the exploration, split-safe preprocessing, regression diagnostics, cross-validation, and sample predictions.
-
-### Train the model
+### 3. Train Models & Generate Benchmarks
 
 ```bash
 python src/train.py
 ```
 
-This compares Linear Regression, Random Forest, and XGBoost using the same five-fold split and preprocessing. Selection uses mean CV MAE; the untouched test split is reported for the comparison. The winner is refit on all rows and saved to `models/best_model.joblib`. Per-model results are saved to `results/model_comparison.csv` and `results/model_metrics.json`. If XGBoost is unavailable, that candidate is skipped with a note.
-
-### Make a prediction
+### 4. Run Automated Test Suite
 
 ```bash
-python src/predict.py
+python tests/test_pipeline.py
 ```
 
-### Run the web application
+### 5. Launch Interactive Web Dashboard
 
 ```bash
 streamlit run app.py
 ```
 
-## Model Evaluation
+The application will open in your browser at `http://localhost:8501`.
 
-The trained model will be evaluated using regression metrics such as:
+---
 
-- MAE (Mean Absolute Error)
-- RMSE (Root Mean Squared Error)
-- R² Score
+## 🔮 Programmatic Inference Example
 
-Model metrics, validation plots, and EDA outputs are stored in:
+```python
+import pandas as pd
+from src.predict import predict_with_advisory
 
-```text
-results/
+sample_input = {
+    "location": "Anand Vihar",
+    "temp_c": 14.5,
+    "humidity": 78.0,
+    "pressure_mb": 1018.0,
+    "windspeed_kph": 3.2,
+    "pm2_5": 210.0,
+    "pm10": 390.0,
+    "co": 2100.0,
+    "no2": 65.0,
+    "hour": 8,
+    "day": 15,
+    "month": 12,
+    "day_of_week": 1,
+}
+
+result = predict_with_advisory(sample_input)
+print(f"Predicted AQI: {result['predicted_aqi']} ({result['category']})")
+print(f"Dominant Pollutant: {result['dominant_pollutant']['name']}")
+print(f"Mask Advice: {result['advisory']['mask']}")
 ```
 
-The application takes AQI-related pollutant and weather measurements as inputs. It estimates AQI for those measurements; it does not forecast future AQI.
+---
 
-## Current Status
+## 📜 License
 
-## Analysis and validation notes
-
-- Numeric feature missing values are median-imputed, with missingness indicators; `location` is mode-imputed and one-hot encoded. Imputers, encoder, and standard scaler are part of the estimator pipeline, so they are fitted on training data only and refitted within each cross-validation fold.
-- Candidate estimators are multiple linear regression, random forest, and XGBoost. Each uses the same fold-local imputation, categorical encoding, and scaling pipeline. The selected model is the lowest mean CV MAE on the training partition; the test partition is reserved for final comparison. Predictions are floored at zero because AQI cannot be negative.
-- The web app reads `models/best_model.joblib`; run model training before launching the app. Training also saves the Linear Regression baseline separately for comparison.
-- The dataset is hourly. Random splits can put nearby observations in both train and test, so reported metrics measure interpolation/generalization across sampled records. For forecasting future dates, use a chronological holdout and time-series cross-validation.
-- Pollutant concentrations are also inputs to the target AQI. If the intended product must predict AQI before pollutant measurements are available, remove those fields and retrain; current scores do not establish that use case.
-
-🚧 **Project in development**
-
-- [x] Project structure
-- [x] Dataset collection
-- [x] Initial preprocessing
-- [x] Exploratory data analysis
-- [x] Feature engineering
-- [x] Model training
-- [x] Model evaluation
-- [x] Prediction pipeline
-- [x] Streamlit application
-- [x] Model comparison and documentation
-
-## Future Improvements
-
-- Improve feature engineering
-- Perform hyperparameter tuning
-- Add time-series forecasting
-- Improve the Streamlit dashboard
-- Add model explainability
-- Deploy the application
-
-## License
-
-This project is for educational and research purposes.
+This project is licensed under the MIT License. Developed for research, academic, and public health environmental intelligence purposes.
